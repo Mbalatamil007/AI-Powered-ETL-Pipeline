@@ -1,0 +1,186 @@
+{
+  "name": "ETL AI Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "File Upload",
+        "formDescription": "Upload the student date",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "File Upload",
+              "fieldType": "file"
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        -304,
+        -16
+      ],
+      "id": "95791e77-4ed4-4055-89e8-b1de3c815ef4",
+      "name": "CSV Upload",
+      "webhookId": "911a85cb-0b20-4e97-88f9-64a454e61376"
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "File_Upload",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -160,
+        -16
+      ],
+      "id": "acd7266b-af9d-40bd-b10d-4f0d122d4a74",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={\n  \"name\": \"ETL AI AUTOMATION\",\n  \"nodes\": [\n    {\n      \"parameters\": {\n        \"formTitle\": \"File Upload\",\n        \"formDescription\": \"Upload the student data\",\n        \"formFields\": {\n          \"values\": [\n            {\n              \"fieldLabel\": \"File Upload\",\n              \"fieldType\": \"file\"\n            }\n          ]\n        },\n        \"options\": {\n          \"appendAttribution\": false\n        }\n      },\n      \"type\": \"n8n-nodes-base.formTrigger\",\n      \"typeVersion\": 2.6,\n      \"position\": [\n        -240,\n        -16\n      ],\n      \"id\": \"24ad9c8c-bc76-4818-a891-2e14cea2812b\",\n      \"name\": \"CSV Upload\",\n      \"webhookId\": \"d11b83ac-c5ba-456d-9e25-4e496bdf3de3\"\n    },\n    {\n      \"parameters\": {\n        \"binaryPropertyName\": \"File_Upload\",\n        \"options\": {}\n      },\n      \"type\": \"n8n-nodes-base.extractFromFile\",\n      \"typeVersion\": 1.1,\n      \"position\": [\n        -32,\n        -16\n      ],\n      \"id\": \"df402631-5455-43be-91c8-bb0111747604\",\n      \"name\": \"Extract from File\"\n    },\n    {\n      \"parameters\": {\n        \"promptType\": \"define\",\n        \"text\": \"=Clean this student enrollment row and return ONLY a JSON object.\\n\\nRow data: {{ JSON.stringify($json) }}\\n\\nRules:\\n- Name: Title Case (Manoj K)\\n- Email: if invalid set INVALID_EMAIL\\n- Phone: if less than 10 digits set MISSING\\n- Course: only Python or Machine Learning or Data Science\\n- Fee_Paid: yes/YES = true, no/NO = false\\n- City: Title Case, empty = UNKNOWN\\n- Enrolled_Date: convert to YYYY-MM-DD\\n\\nReturn ONLY raw JSON. No explanation. No markdown.\",\n        \"batching\": {}\n      },\n      \"type\": \"@n8n/n8n-nodes-langchain.chainLlm\",\n      \"typeVersion\": 1.9,\n      \"position\": [\n        176,\n        -16\n      ],\n      \"id\": \"3568c82e-d0c3-4575-8136-a78eb6c9bb34\",\n      \"name\": \"Basic LLM Chain\"\n    },\n    {\n      \"parameters\": {\n        \"model\": {\n          \"__rl\": true,\n          \"value\": \"gpt-4.1-mini\",\n          \"mode\": \"list\",\n          \"cachedResultName\": \"gpt-4.1-mini\"\n        },\n        \"builtInTools\": {},\n        \"options\": {}\n      },\n      \"type\": \"@n8n/n8n-nodes-langchain.lmChatOpenAi\",\n      \"typeVersion\": 1.3,\n      \"position\": [\n        112,\n        192\n      ],\n      \"id\": \"ffa5cb3a-6319-4504-b090-6e04918b67ca\",\n      \"name\": \"OpenAI Chat Model\",\n      \"credentials\": {\n        \"openAiApi\": {\n          \"id\": \"IFJQUjPfmgFA6kX0\",\n          \"name\": \"OpenAI account\"\n        }\n      }\n    },\n    {\n      \"parameters\": {\n        \"jsCode\": \"return items.map(item => {\\n  let data = item.json;\\n\\n  try {\\n    // If the AI output is a string, parse it\\n    if (typeof data === \\\"string\\\") {\\n      data = JSON.parse(data);\\n    }\\n\\n    // If stored inside a field like output/text/result\\n    if (typeof data.output === \\\"string\\\") {\\n      data = JSON.parse(data.output);\\n    }\\n\\n    if (typeof data.text === \\\"string\\\") {\\n      data = JSON.parse(data.text);\\n    }\\n\\n    if (typeof data.result === \\\"string\\\") {\\n      data = JSON.parse(data.result);\\n    }\\n\\n    // Clean values\\n    data.Student_ID = (data.Student_ID || \\\"\\\").trim();\\n    data.Name = (data.Name || \\\"\\\").trim();\\n    data.Email = (data.Email || \\\"\\\").trim().toLowerCase();\\n    data.Phone = (data.Phone || \\\"\\\").replace(/\\\\D/g, \\\"\\\");\\n    data.Course = (data.Course || \\\"\\\").trim();\\n    data.City = (data.City || \\\"\\\").trim();\\n\\n    // Validate email\\n    const emailRegex = /^[^\\\\s@]+@[^\\\\s@]+\\\\.[^\\\\s@]+$/;\\n    data.Email_Valid = emailRegex.test(data.Email);\\n\\n    return {\\n      json: data\\n    };\\n\\n  } catch (error) {\\n    return {\\n      json: {\\n        error: \\\"Invalid JSON\\\",\\n        raw: item.json\\n      }\\n    };\\n  }\\n});\"\n      },\n      \"type\": \"n8n-nodes-base.code\",\n      \"typeVersion\": 2,\n      \"position\": [\n        528,\n        -16\n      ],\n      \"id\": \"77cb213a-97b3-4500-8950-4338eb27004e\",\n      \"name\": \"Code in JavaScript\"\n    },\n    {\n      \"parameters\": {\n        \"options\": {}\n      },\n      \"type\": \"n8n-nodes-base.convertToFile\",\n      \"typeVersion\": 1.1,\n      \"position\": [\n        736,\n        -16\n      ],\n      \"id\": \"6fe21214-9385-4eb5-a9f6-1d7cb44dc60f\",\n      \"name\": \"Convert to File\"\n    }\n  ],\n  \"pinData\": {},\n  \"connections\": {\n    \"CSV Upload\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Extract from File\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Extract from File\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Basic LLM Chain\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"OpenAI Chat Model\": {\n      \"ai_languageModel\": [\n        [\n          {\n            \"node\": \"Basic LLM Chain\",\n            \"type\": \"ai_languageModel\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Basic LLM Chain\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Code in JavaScript\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Code in JavaScript\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Convert to File\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    }\n  },\n  \"active\": true,\n  \"settings\": {\n    \"executionOrder\": \"v1\",\n    \"binaryMode\": \"separate\"\n  },\n  \"versionId\": \"8d28ee8f-52e2-4457-bf99-00df2dbd6d2a\",\n  \"meta\": {\n    \"templateCredsSetupCompleted\": true,\n    \"instanceId\": \"5d55ed140be0a49720d8f0ad26a90f076a972b72cb489c8d2d550d373f812213\"\n  },\n  \"nodeGroups\": [],\n  \"id\": \"b109KK7SGFMKRSJ4\",\n  \"tags\": []\n}",
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        16,
+        -16
+      ],
+      "id": "2f2e7504-9e2d-45b2-a169-332f41a6c122",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        96,
+        192
+      ],
+      "id": "7b26e263-dd2d-43ae-9887-67e14711e368",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "Q1JIiJSa3oEvtgSH",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// ETL AI AUTOMATION - FINAL DATA CLEANING\n// Preserve all 50 student records\n// =============================================\n\n// Original CSV records\nconst originalItems = $(\"Extract from File\").all();\n\n// AI output records\nconst aiItems = $input.all();\n\n// Convert text to Title Case\nfunction titleCase(value) {\n  return String(value ?? \"\")\n    .trim()\n    .toLowerCase()\n    .replace(/\\b\\w/g, c => c.toUpperCase());\n}\n\n// Convert date to YYYY-MM-DD\nfunction cleanDate(value) {\n  const date = String(value ?? \"\").trim();\n\n  if (!date) return \"INVALID_DATE\";\n\n  let year, month, day;\n  let match;\n\n  // DD-MM-YYYY or DD/MM/YYYY\n  match = date.match(/^(\\d{1,2})[-/](\\d{1,2})[-/](\\d{4})$/);\n\n  if (match) {\n    day = Number(match[1]);\n    month = Number(match[2]);\n    year = Number(match[3]);\n  } else {\n    // YYYY-MM-DD\n    match = date.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})$/);\n\n    if (!match) return \"INVALID_DATE\";\n\n    year = Number(match[1]);\n    month = Number(match[2]);\n    day = Number(match[3]);\n  }\n\n  const parsed = new Date(Date.UTC(year, month - 1, day));\n\n  if (\n    parsed.getUTCFullYear() !== year ||\n    parsed.getUTCMonth() + 1 !== month ||\n    parsed.getUTCDate() !== day\n  ) {\n    return \"INVALID_DATE\";\n  }\n\n  return `${year}-${String(month).padStart(2, \"0\")}-${String(day).padStart(2, \"0\")}`;\n}\n\n// Parse AI response safely\nfunction parseAI(item) {\n  try {\n    let data = item?.json?.text ??\n               item?.json?.output ??\n               item?.json;\n\n    if (typeof data === \"string\") {\n      data = data\n        .replace(/^```(?:json)?\\s*/i, \"\")\n        .replace(/\\s*```$/, \"\")\n        .trim();\n\n      const start = data.indexOf(\"{\");\n      const end = data.lastIndexOf(\"}\");\n\n      if (start === -1 || end <= start) {\n        return null;\n      }\n\n      data = JSON.parse(data.slice(start, end + 1));\n    }\n\n    if (\n      !data ||\n      typeof data !== \"object\" ||\n      Array.isArray(data) ||\n      !data.Student_ID\n    ) {\n      return null;\n    }\n\n    return data;\n\n  } catch (error) {\n    return null;\n  }\n}\n\n// Create a lookup using Student_ID\nconst aiLookup = new Map();\n\nfor (const item of aiItems) {\n  const parsed = parseAI(item);\n\n  if (parsed) {\n    const id = String(parsed.Student_ID).trim();\n\n    if (id && !aiLookup.has(id)) {\n      aiLookup.set(id, parsed);\n    }\n  }\n}\n\n// Process all original CSV records\nconst cleanedData = originalItems.map((item, index) => {\n\n  const original = item.json;\n\n  const studentId = String(original.Student_ID ?? \"\").trim();\n\n  // Use AI data only when Student_ID matches\n  const aiData = aiLookup.get(studentId);\n\n  // Preserve original identity\n  const name = titleCase(original.Name);\n\n  // Email\n  const email = String(\n    aiData?.Email ?? original.Email ?? \"\"\n  ).trim().toLowerCase();\n\n  const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n\n  const cleanEmail = emailRegex.test(email)\n    ? email\n    : \"INVALID_EMAIL\";\n\n  // Phone\n  const phone = String(\n    aiData?.Phone ?? original.Phone ?? \"\"\n  ).replace(/\\D/g, \"\");\n\n  const cleanPhone = phone.length === 10\n    ? phone\n    : \"MISSING\";\n\n  // Course\n  const course = String(\n    aiData?.Course ?? original.Course ?? \"\"\n  ).trim().toLowerCase();\n\n  const courseMap = {\n    \"python\": \"Python\",\n    \"ml\": \"Machine Learning\",\n    \"machine learning\": \"Machine Learning\",\n    \"data science\": \"Data Science\"\n  };\n\n  const cleanCourse = courseMap[course] ?? \"UNKNOWN\";\n\n  // Fee Paid\n  const feeValue = String(\n    original.Fee_Paid ?? \"\"\n  ).trim().toLowerCase();\n\n  const feePaid = [\"yes\", \"true\", \"1\"].includes(feeValue);\n\n  // City\n  const city = titleCase(\n    aiData?.City ?? original.City\n  ) || \"UNKNOWN\";\n\n  // Date: use original date to avoid AI date changes\n  const enrolledDate = cleanDate(original.Enrolled_Date);\n\n  return {\n    json: {\n      Student_ID: studentId,\n      Name: name,\n      Email: cleanEmail,\n      Phone: cleanPhone,\n      Course: cleanCourse,\n      Fee_Paid: feePaid,\n      City: city,\n      Enrolled_Date: enrolledDate,\n      Status: aiData ? \"AI_CLEANED\" : \"JS_CLEANED\"\n    },\n    pairedItem: { item: index }\n  };\n\n});\n\nreturn cleanedData;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        -16
+      ],
+      "id": "bf495a7a-e8e8-4ec9-94cb-0f8255db4c7d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        496,
+        -16
+      ],
+      "id": "b7436a1a-7dbb-442f-bbc6-c14151779722",
+      "name": "Convert to File"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "CSV Upload": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "c177ded7-73a3-4f29-a86d-a7a8441beac4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b78af713c8c834109c71bfa471724f2fc2888bfa780011394231fef89a835e39"
+  },
+  "nodeGroups": [],
+  "id": "jidhmumhfVSZzueR",
+  "tags": []
+}
